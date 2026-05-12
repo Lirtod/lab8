@@ -1,4 +1,5 @@
 #include <iostream>
+<<<<<<< HEAD
 #include <iomanip>
 
 using namespace std;
