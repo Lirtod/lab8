@@ -1,75 +1,161 @@
 #include <iostream>
-#include <iomanip>
+#include <fstream>
+#include <string>
 
-using namespace std;
+struct Runner {
+    int number;
+    std::string last;
+    std::string first;
+    std::string middle;
+    std::string start;
+    std::string finish;
+    std::string club;
+    int time;
+};
 
-#include "book_subscription.h"
-#include "file_reader.h"
-#include "constants.h"
+int toSeconds(std::string t) {
+    int h = (t[0]-'0')*10 + (t[1]-'0');
+    int m = (t[3]-'0')*10 + (t[4]-'0');
+    int s = (t[6]-'0')*10 + (t[7]-'0');
+    return h*3600 + m*60 + s;
+}
 
-int main()
-{
-    setlocale(LC_ALL, "Russian");
-    cout << "Лабораторная работа №8. GIT\n";
-    cout << "Вариант №0. Библиотечный абонемент\n";
-    cout << "Автор: Сергей Ермоченко\n\n";
-    book_subscription* subscriptions[MAX_FILE_ROWS_COUNT];
-    int size;
-    try
-    {
-        read("data.txt", subscriptions, size);
-        cout << "***** Библиотечный абонемент *****\n\n";
-        for (int i = 0; i < size; i++)
-        {
-            /********** вывод читателя **********/
-            cout << "Читатель........: ";
-            // вывод фамилии
-            cout << subscriptions[i]->reader.last_name << " ";
-            // вывод первой буквы имени
-            cout << subscriptions[i]->reader.first_name[0] << ". ";
-            // вывод первой буквы отчества
-            cout << subscriptions[i]->reader.middle_name[0] << ".";
-            cout << '\n';
-            /********** вывод книги **********/
-            cout << "Книга...........: ";
-            // вывод фамилии автора
-            cout << subscriptions[i]->author.last_name << " ";
-            // вывод первой буквы имени автора
-            cout << subscriptions[i]->author.first_name[0] << ". ";
-            // вывод первой буквы отчества автора
-            cout << subscriptions[i]->author.middle_name[0] << ".";
-            cout << ", ";
-            // вывод названия
-            cout << '"' << subscriptions[i]->title << '"';
-            cout << '\n';
-            /********** вывод даты выдачи **********/
-            // вывод года
-            cout << "Дата выдачи.....: ";
-            cout << setw(4) << setfill('0') << subscriptions[i]->start.year << '-';
-            // вывод месяца
-            cout << setw(2) << setfill('0') << subscriptions[i]->start.month << '-';
-            // вывод числа
-            cout << setw(2) << setfill('0') << subscriptions[i]->start.day;
-            cout << '\n';
-            /********** вывод даты возврата **********/
-            // вывод года
-            cout << "Дата возврата...: ";
-            cout << setw(4) << setfill('0') << subscriptions[i]->finish.year << '-';
-            // вывод месяца
-            cout << setw(2) << setfill('0') << subscriptions[i]->finish.month << '-';
-            // вывод числа
-            cout << setw(2) << setfill('0') << subscriptions[i]->finish.day;
-            cout << '\n';
-            cout << '\n';
-        }
-        for (int i = 0; i < size; i++)
-        {
-            delete subscriptions[i];
+void print(Runner a[], int n) {
+    for (int i = 0; i < n; i++) {
+        std::cout << a[i].number << " " << a[i].last << " " << a[i].first << " " << a[i].middle << " " << a[i].time << " " << a[i].club << std::endl;
+    }
+}
+
+void bubbleTime(Runner a[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (a[j].time > a[j+1].time) {
+                Runner t = a[j];
+                a[j] = a[j+1];
+                a[j+1] = t;
+            }
         }
     }
-    catch (const char* error)
-    {
-        cout << error << '\n';
+}
+
+bool cmpClub(Runner a, Runner b) {
+    if (a.club == b.club) return a.last > b.last;
+    return a.club > b.club;
+}
+
+void bubbleClub(Runner a[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (cmpClub(a[j], a[j+1])) {
+                Runner t = a[j];
+                a[j] = a[j+1];
+                a[j+1] = t;
+            }
+        }
     }
+}
+
+int partitionTime(Runner a[], int l, int r) {
+    int pivot = a[r].time;
+    int i = l - 1;
+    for (int j = l; j < r; j++) {
+        if (a[j].time < pivot) {
+            i++;
+            Runner t = a[i];
+            a[i] = a[j];
+            a[j] = t;
+        }
+    }
+    Runner t = a[i+1];
+    a[i+1] = a[r];
+    a[r] = t;
+    return i+1;
+}
+
+void quickTime(Runner a[], int l, int r) {
+    if (l < r) {
+        int p = partitionTime(a, l, r);
+        quickTime(a, l, p-1);
+        quickTime(a, p+1, r);
+    }
+}
+
+int partitionClub(Runner a[], int l, int r) {
+    Runner pivot = a[r];
+    int i = l - 1;
+    for (int j = l; j < r; j++) {
+        if (!cmpClub(a[j], pivot)) {
+            i++;
+            Runner t = a[i];
+            a[i] = a[j];
+            a[j] = t;
+        }
+    }
+    Runner t = a[i+1];
+    a[i+1] = a[r];
+    a[r] = t;
+    return i+1;
+}
+
+void quickClub(Runner a[], int l, int r) {
+    if (l < r) {
+        int p = partitionClub(a, l, r);
+        quickClub(a, l, p-1);
+        quickClub(a, p+1, r);
+    }
+}
+
+int main() {
+    std::ifstream file("input.txt");
+    Runner a[100];
+    int n = 0;
+
+    while (file >> a[n].number >> a[n].last >> a[n].first >> a[n].middle >> a[n].start >> a[n].finish) {
+        std::getline(file, a[n].club);
+        if (a[n].club.size() > 0 && a[n].club[0] == ' ') a[n].club.erase(0,1);
+        int st = toSeconds(a[n].start);
+        int fn = toSeconds(a[n].finish);
+        a[n].time = fn - st;
+        n++;
+    }
+
+    std::cout << "Spartak:" << std::endl;
+    for (int i = 0; i < n; i++) {
+        if (a[i].club == "Спартак") {
+            std::cout << a[i].number << " " << a[i].last << " " << a[i].time << std::endl;
+        }
+    }
+
+    int limit = 2*3600 + 50*60;
+
+    std::cout << "Better than 2:50:00:" << std::endl;
+    for (int i = 0; i < n; i++) {
+        if (a[i].time < limit) {
+            std::cout << a[i].number << " " << a[i].last << " " << a[i].time << std::endl;
+        }
+    }
+
+    Runner b[100];
+    for (int i = 0; i < n; i++) b[i] = a[i];
+
+    bubbleTime(b, n);
+    std::cout << "Bubble sort by time:" << std::endl;
+    print(b, n);
+
+    for (int i = 0; i < n; i++) b[i] = a[i];
+    quickTime(b, 0, n-1);
+    std::cout << "Quick sort by time:" << std::endl;
+    print(b, n);
+
+    for (int i = 0; i < n; i++) b[i] = a[i];
+    bubbleClub(b, n);
+    std::cout << "Bubble sort by club+last:" << std::endl;
+    print(b, n);
+
+    for (int i = 0; i < n; i++) b[i] = a[i];
+    quickClub(b, 0, n-1);
+    std::cout << "Quick sort by club+last:" << std::endl;
+    print(b, n);
+
     return 0;
 }
